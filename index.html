@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ecommerce Maquillaje Internacional</title>
+  <style>
+    :root{
+      --morado:#C8A2C8;
+      --morado-soft:#E5D4EF;
+      --rosado:#F7C5CC;
+      --rosado-soft:#FDE7EB;
+      --texto:#3A2E3F;
+      --white:#ffffff;
+    }
+
+    body{
+      font-family: system-ui;
+      background: var(--morado-soft);
+      color: var(--texto);
+      padding: 20px;
+      text-align: center;
+    }
+
+    h1{
+      color: var(--morado);
+      margin-bottom: 25px;
+    }
+
+    #productos{
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+
+    .producto{
+      background: var(--white);
+      border: 2px solid var(--rosado);
+      border-radius: 10px;
+      padding: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+    }
+
+    .producto img{
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      border-radius: 8px;
+      background: var(--rosado-soft);
+    }
+
+    .producto button{
+      background: var(--morado);
+      color: white;
+      border: none;
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .carrito{
+      background: var(--white);
+      border: 2px solid var(--morado);
+      padding: 20px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 550px;
+      margin: 0 auto;
+      text-align: left;
+    }
+
+    #lista-carrito{
+      list-style: none;
+      padding: 0;
+    }
+
+    #lista-carrito li{
+      background: var(--rosado-soft);
+      border: 1px solid var(--rosado);
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .qty button{
+      background: var(--morado);
+      border: none;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .remove{
+      background: #c0392b;
+      border: none;
+      color: white;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .vaciar, .finalizar{
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+
+    .vaciar{
+      background: #c0392b;
+      color: white;
+    }
+
+    .finalizar{
+      background: var(--morado);
+      color: white;
+    }
+
+    #paypal-button-container{
+      margin-top: 15px;
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>🍽️ Ecommerce Maquillaje Internacional</h1>
+
+  <div id="productos"></div>
+
+  <div class="carrito">
+    <h2>🧾 Carrito (<span id="cantidad-carrito">0</span>)</h2>
+    <ul id="lista-carrito"></ul>
+
+    <p><strong>Subtotal:</strong> <span id="subtotal-text">$0.00</span></p>
+    <p><strong>Impuestos:</strong> <span id="impuestos-text">$0.00</span></p>
+    <p><strong>Total:</strong> <span id="total-text">$0.00</span></p>
+
+    <button class="vaciar" id="btn-vaciar">🧼 Vaciar Carrito</button>
+    <button class="finalizar" id="btn-finalizar">✅ Finalizar Compra</button>
+
+    <div id="paypal-button-container"></div>
+  </div>
+
+<script src="https://www.paypal.com/sdk/js?client-id=sb&currency=USD"></script>
+<script>
+const productos = [
+  { id: 1, nombre: "Kit Básico", precio: 25.00, categoria:"kits", imagen: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRSGW8frSjMPAujt-vCIPiTozhWFpdcQs4d-A&s" },
+  { id: 2, nombre: "Kit Avanzado", precio: 18.00, categoria:"kits", imagen: "https://static.wixstatic.com/media/11c77a_78b6b8541cfe40699a02ca16e9b68411~mv2.jpg/v1/fill/w_568,h_378,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/11c77a_78b6b8541cfe40699a02ca16e9b68411~mv2.jpg" },
+  { id: 3, nombre: "Kit Profesional", precio: 30.00, categoria:"kits", imagen: "https://img.kwcdn.com/product/fancy/41c6c539-0e7e-4948-818a-51485fa08e76.jpg?imageMogr2/auto-orient%7CimageView2/2/w/800/q/70/format/webp" },
+  { id: 4, nombre: "Set de Brochas", precio: 18.00, categoria:"brochas", imagen: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRVDuXacXmvv-wzSs2yLRmwETLh8ZoQV9boyA&s" },
+  { id: 5, nombre: "Set Brochas Profesional", precio: 22.00, categoria:"brochas", imagen: "https://hips.hearstapps.com/vader-prod.s3.amazonaws.com/1684158860-set-brochas-maquillaje-amazon-estuche-viaje-6462396a650fa.jpg?crop=1xw:1xh;center,top&resize=980:*" }
+];
+
+let carrito = new Map();
+
+const el = {
+  contProds: document.getElementById("productos"),
+  lista: document.getElementById("lista-carrito"),
+  subtotal: document.getElementById("subtotal-text"),
+  impuestos: document.getElementById("impuestos-text"),
+  total: document.getElementById("total-text"),
+  cantidad: document.getElementById("cantidad-carrito"),
+  btnVaciar: document.getElementById("btn-vaciar"),
+  btnFinal: document.getElementById("btn-finalizar"),
+  paypal: document.getElementById("paypal-button-container")
+};
+
+const money = new Intl.NumberFormat("es-CO", {
+  style: "currency",
+  currency: "USD"
+});
+
+function renderProductos(){
+  el.contProds.innerHTML = "";
+  productos.forEach(p=>{
+    const card = document.createElement("div");
+    card.className = "producto";
+    card.innerHTML = `
+      <img src="${p.imagen}" alt="${p.nombre}">
+      <h3>${p.nombre}</h3>
+      <p><strong>${money.format(p.precio)}</strong></p>
+      <button data-add="${p.id}">Agregar al carrito</button>
+    `;
+    el.contProds.appendChild(card);
+  });
+}
+
+function persist(){ localStorage.setItem("carrito", JSON.stringify(Array.from(carrito.entries()))); }
+function load(){ const data = localStorage.getItem("carrito"); if(data) carrito = new Map(JSON.parse(data)); }
+
+function totales(){
+  const subtotal = [...carrito.values()].reduce((a,i)=> a + i.precio * i.cantidad, 0);
+  const impuestos = +(subtotal * 0.00).toFixed(2);
+  const total = subtotal + impuestos;
+  const cantidad = [...carrito.values()].reduce((a,i)=> a + i.cantidad, 0);
+  return {subtotal, impuestos, total, cantidad};
+}
+
+function pintarCarrito(){
+  el.lista.innerHTML = "";
+  carrito.forEach(it=>{
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <span>${it.nombre} — ${money.format(it.precio)} x ${it.cantidad}</span>
+      <div class="qty">
+        <button data-dec="${it.id}">-</button>
+        <button data-inc="${it.id}">+</button>
+        <button class="remove" data-del="${it.id}">❌</button>
+      </div>`;
+    el.lista.appendChild(li);
+  });
+
+  const {subtotal, impuestos, total, cantidad} = totales();
+  el.subtotal.textContent = money.format(subtotal);
+  el.impuestos.textContent = money.format(impuestos);
+  el.total.textContent = money.format(total);
+  el.cantidad.textContent = cantidad;
+
+  if(total > 0){ el.paypal.style.display = "block"; renderPayPal(total); }
+  else el.paypal.style.display = "none";
+}
+
+function add(id){
+  const p = productos.find(x=>x.id===id);
+  const it = carrito.get(id);
+  if(it) it.cantidad++;
+  else carrito.set(id,{...p,cantidad:1});
+  persist(); pintarCarrito();
+}
+function dec(id){ const it = carrito.get(id); if(!it) return; it.cantidad--; if(it.cantidad<=0) carrito.delete(id); persist(); pintarCarrito(); }
+function del(id){ carrito.delete(id); persist(); pintarCarrito(); }
+
+let paypalRenderedTotal=null;
+function renderPayPal(total){
+  if(paypalRenderedTotal === total) return;
+  paypalRenderedTotal = total;
+  el.paypal.innerHTML = "";
+
+  paypal.Buttons({
+    createOrder:(data,actions)=>actions.order.create({ purchase_units:[{amount:{value: total.toFixed(2)}}] }),
+    onApprove:(data,actions)=>actions.order.capture().then(()=>{
+      alert("Gracias por tu compra!");
+      carrito.clear(); persist(); pintarCarrito();
+    })
+  }).render('#paypal-button-container');
+}
+
+// EVENTOS
+
+document.addEventListener('click', e=>{
+  if(e.target.dataset.add) add(+e.target.dataset.add);
+  if(e.target.dataset.inc) add(+e.target.dataset.inc);
+  if(e.target.dataset.dec) dec(+e.target.dataset.dec);
+  if(e.target.dataset.del) del(+e.target.dataset.del);
+});
+
+el.btnVaciar.onclick = ()=>{ if(confirm("¿Vaciar carrito?")){ carrito.clear(); persist(); pintarCarrito(); }};
+el.btnFinal.onclick = ()=>{
+  if(carrito.size===0) return alert("Carrito vacío");
+  alert("Compra confirmada (simulada)");
+  carrito.clear(); persist(); pintarCarrito();
+};
+
+load();
+renderProductos();
+pintarCarrito();
+</script>
+
+</body>
+</html>
